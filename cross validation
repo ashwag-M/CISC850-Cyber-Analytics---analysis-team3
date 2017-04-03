@@ -1,0 +1,58 @@
+import csv
+import numpy as np
+import pandas as pd
+from sklearn import preprocessing
+from sklearn import model_selection
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.pipeline import make_pipeline
+from sklearn.cross_validation import StratifiedKFold
+import matplotlib.pyplot as plt
+
+# Load data
+
+df=pd.read_csv(r'c:\python27\features.csv')
+
+ds = map(lambda l: l.split('\n')[0], open('c:\python27\label.csv','r').readlines())
+labels = { l:i for (i,l) in enumerate(list(set(ds))) }
+ds = map(lambda l: labels[l], ds)
+
+X=np.array(df)
+X = np.log(1+X)
+#X = preprocessing.scale(X)
+y=np.array(ds)
+algorithms = ['DT', 'KNN', 'RF', 'SVM']
+
+# prepare configuration for cross validation test harness
+
+# prepare models
+models = []
+models.append(('DT', DecisionTreeClassifier()))
+models.append(('KNN', KNeighborsClassifier()))
+models.append(('RF', RandomForestClassifier()))
+models.append(('SVM', SVC()))
+
+# evaluate each model in turn
+results = []
+algorithms = []
+scoring = 'accuracy'
+for algorithm, model in models:
+    
+        kfold = StratifiedKFold(y,n_folds=3)
+        cv_results = model_selection.cross_val_score(make_pipeline(preprocessing.StandardScaler(), model), X, y, cv=kfold, scoring=scoring)
+        results.append(cv_results)
+        algorithms.append(algorithm)
+        msg = (algorithm,  cv_results.mean(), cv_results.std())
+
+        print(msg)
+
+
+# boxplot algorithm comparison
+fig = plt.figure()
+fig.suptitle('Algorithm Comparison')
+ax = fig.add_subplot(111)
+plt.boxplot(results)
+ax.set_xticklabels(algorithms)
+plt.show()
